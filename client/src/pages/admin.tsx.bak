@@ -1,0 +1,862 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet';
+import axios from 'axios';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Users, 
+  Database, 
+  Upload, 
+  BarChart, 
+  FileText, 
+  AlertCircle, 
+  List,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Book,
+  Bookmark,
+  FilePlus,
+  FileText as FileTextIcon
+} from 'lucide-react';
+
+const AdminPage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [userStats, setUserStats] = useState<any>(null);
+  const [csvType, setCsvType] = useState<'textbooks' | 'questions'>('textbooks');
+  const [textbooks, setTextbooks] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ユーザー統計を取得する
+  const fetchUserStats = async () => {
+    try {
+      const response = await axios.get('/api/admin/user-stats');
+      setUserStats(response.data);
+    } catch (err: any) {
+      console.error('User stats fetch error:', err);
+      setError(err.response?.data?.message || 'ユーザー統計情報の取得中にエラーが発生しました');
+    }
+  };
+
+  // コンポーネントマウント時にユーザー統計を取得
+  // データを取得する関数
+  const fetchData = async () => {
+    if (activeTab === 'dashboard') {
+      fetchUserStats();
+    } else if (activeTab === 'data-browse') {
+      // データ閲覧タブが選択されたらデータを取得
+      fetchTextbooks();
+    }
+  };
+
+  // 教科書データを取得する関数
+  const fetchTextbooks = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/textbooks');
+      setTextbooks(response.data);
+    } catch (err: any) {
+      console.error('Textbooks fetch error:', err);
+      setError(err.response?.data?.message || '教科書データの取得中にエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [activeTab]);
+
+  // データインポート（既存の関数）
+  const handleImportTextbooks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.post('/api/import/textbooks');
+      setResult(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || '教科書データのインポート中にエラーが発生しました');
+      console.error('Import error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportQuestions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.post('/api/import/questions');
+      setResult(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || '問題データのインポート中にエラーが発生しました');
+      console.error('Import error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 参考書データを削除する関数
+  const handleDeleteTextbook = async (bookId: string) => {
+    if (!window.confirm(`参考書ID「${bookId}」と関連するすべてのデータを削除します。この操作は元に戻せません。よろしいですか？`)) {
+      return; // キャンセルされた場合
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.delete(`/api/admin/textbooks/${bookId}`);
+      setResult(response.data);
+      
+      // UIからデータをすぐに削除（最適化）
+      setTextbooks(prevTextbooks => prevTextbooks.filter(book => book.bookId !== bookId));
+      
+      // UI削除後、バックグラウンドでデータを再取得してDB状態と同期
+      setTimeout(() => {
+        fetchTextbooks();
+      }, 500);
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'データの削除中にエラーが発生しました');
+      console.error('Delete error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInitDatabase = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.post('/api/init-database');
+      setResult(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'データベース初期化中にエラーが発生しました');
+      console.error('Database init error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CSV ファイルアップロード関連の関数
+  const handleCsvTypeChange = (type: 'textbooks' | 'questions') => {
+    setCsvType(type);
+  };
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setError(null);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`/api/admin/upload/${csvType}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setResult(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'CSVアップロード中にエラーが発生しました');
+      console.error('Upload error:', err);
+    } finally {
+      setLoading(false);
+      // ファイル選択をリセット
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <Helmet>
+        <title>管理者ページ | Do-Test</title>
+      </Helmet>
+      
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">管理者ページ</h1>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6 w-full bg-white p-1 border rounded-lg">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart className="w-4 h-4" />
+            <span>ダッシュボード</span>
+          </TabsTrigger>
+          <TabsTrigger value="data-browse" className="flex items-center gap-2">
+            <List className="w-4 h-4" />
+            <span>データ閲覧</span>
+          </TabsTrigger>
+          <TabsTrigger value="data-import" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            <span>データインポート</span>
+          </TabsTrigger>
+          <TabsTrigger value="csv-upload" className="flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            <span>CSVアップロード</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="dashboard" className="mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Card className="p-6 bg-blue-50 border-blue-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-blue-800">総ユーザー数</h3>
+                <Users className="w-8 h-8 text-blue-500" />
+              </div>
+              <p className="text-3xl font-bold text-blue-700">
+                {userStats ? userStats.totalUsers : '-'}
+              </p>
+              <p className="text-sm text-blue-600 mt-2">登録ユーザーの総数</p>
+            </Card>
+            
+            <Card className="p-6 bg-green-50 border-green-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-green-800">アクティブユーザー</h3>
+                <Users className="w-8 h-8 text-green-500" />
+              </div>
+              <p className="text-3xl font-bold text-green-700">
+                {userStats ? userStats.activeUsers : '-'}
+              </p>
+              <p className="text-sm text-green-600 mt-2">最近ログインしたユーザー</p>
+            </Card>
+            
+            <Card className="p-6 bg-purple-50 border-purple-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-purple-800">本日の新規ユーザー</h3>
+                <Users className="w-8 h-8 text-purple-500" />
+              </div>
+              <p className="text-3xl font-bold text-purple-700">
+                {userStats ? userStats.newUsersToday : '-'}
+              </p>
+              <p className="text-sm text-purple-600 mt-2">今日登録したユーザー数</p>
+            </Card>
+          </div>
+          
+          <Card className="p-6 mt-6">
+            <h2 className="text-xl font-semibold mb-4">ユーザー分析</h2>
+            <p className="text-gray-600">
+              実際のアプリケーションでは、ここにユーザーの活動分析グラフやトレンドが表示されます。
+            </p>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="data-browse" className="mt-0">
+          <Card className="p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-4">インポートデータ</h2>
+              <p className="text-gray-600">インポートされたデータを閲覧します。参考書をクリックすると詳細が表示されます。</p>
+            </div>
+            
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">データを読み込み中...</p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">インポートデータ一覧（全{textbooks.length}件）</h3>
+                
+                {textbooks.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500 border rounded-lg">
+                    インポートされたデータがありません。CSVアップロードからデータをインポートしてください。
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {textbooks.map((book) => (
+                      <BookDetails 
+                        key={book.bookId} 
+                        book={book} 
+                        onDelete={handleDeleteTextbook} 
+                        loading={loading} 
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="data-import" className="mt-0">
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">データインポート</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <button
+                  onClick={handleImportTextbooks}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50"
+                >
+                  参考書データをインポート
+                </button>
+                <p className="text-sm text-gray-600 mt-1">
+                  CSVファイルから参考書と章データをインポートします
+                </p>
+              </div>
+              
+              <div>
+                <button
+                  onClick={handleImportQuestions}
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50"
+                >
+                  問題データをインポート
+                </button>
+                <p className="text-sm text-gray-600 mt-1">
+                  CSVファイルから問題データをインポートします
+                </p>
+              </div>
+              
+              <div>
+                <button
+                  onClick={handleInitDatabase}
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 disabled:opacity-50"
+                >
+                  データベースを初期化
+                </button>
+                <p className="text-sm text-gray-600 mt-1">
+                  CSVファイルからすべてのデータをインポートしてデータベースを初期化します
+                </p>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="csv-upload" className="mt-0">
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">CSVアップロード</h2>
+            
+            <div className="mb-4">
+              <p className="text-gray-700 mb-2">アップロードするCSVの種類を選択:</p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleCsvTypeChange('textbooks')}
+                  className={`px-4 py-2 rounded-md ${csvType === 'textbooks' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  参考書データ
+                </button>
+                <button
+                  onClick={() => handleCsvTypeChange('questions')}
+                  className={`px-4 py-2 rounded-md ${csvType === 'questions' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  問題データ
+                </button>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                  
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+                      // アップロード処理を実行
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      setLoading(true);
+                      setError(null);
+                      
+                      axios.post(`/api/admin/upload/${csvType}`, formData, {
+                        headers: {
+                          'Content-Type': 'multipart/form-data'
+                        }
+                      })
+                      .then(response => {
+                        setResult(response.data);
+                      })
+                      .catch(err => {
+                        setError(err.response?.data?.message || 'CSVアップロード中にエラーが発生しました');
+                        console.error('Upload error:', err);
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                    } else {
+                      setError('CSVファイル形式のみアップロードできます');
+                    }
+                  }
+                }}
+                onClick={triggerFileInput}
+              >
+                <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-700 mb-4">
+                  {csvType === 'textbooks' ? '参考書データ' : '問題データ'}のCSVファイルをアップロード
+                </p>
+                <div className="flex flex-col items-center space-y-2">
+                  <button
+                    disabled={loading}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50"
+                  >
+                    CSVファイルを選択
+                  </button>
+                  <span className="text-gray-500">または</span>
+                  <p className="text-sm text-blue-600 font-medium">ファイルをここにドラッグ&ドロップ</p>
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <p className="text-xs text-gray-500 mt-4">
+                  CSVファイル形式のみ対応しています
+                </p>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* 状態表示エリア */}
+      {loading && (
+        <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
+          <p className="font-medium">処理中...</p>
+          <p className="text-sm">データの処理には時間がかかる場合があります。</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-700 mt-0.5" />
+          <div>
+            <p className="font-medium">エラーが発生しました</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+      
+      {result && (
+        <div className="bg-green-50 text-green-700 p-4 rounded-md">
+          <p className="font-medium">処理結果</p>
+          <div className="mt-2 text-sm">
+            <p className="font-semibold">
+              {result.deletedTextbook ? '🗑️ データ削除完了' : '📊 データインポート完了'}
+            </p>
+            {result.message && <p className="mt-1">👉 {result.message}</p>}
+            
+            {/* 削除結果の表示 */}
+            {result.deletedTextbook && (
+              <>
+                <p className="mt-1">📚 削除された参考書: {result.deletedTextbook.title}</p>
+                <p className="mt-1">📋 削除された章数: {result.chaptersDeleted || 0}</p>
+                <p className="mt-1">📝 削除された問題数: {result.questionsDeleted || 0}</p>
+              </>
+            )}
+            
+            {/* インポート結果の表示 */}
+            {result.questionsAdded !== undefined && <p className="mt-1">📝 追加された問題数: {result.questionsAdded}</p>}
+            {result.duplicatesSkipped !== undefined && <p className="mt-1">⚠️ 重複のためスキップされた問題数: {result.duplicatesSkipped}</p>}
+            {result.booksAdded !== undefined && <p className="mt-1">📚 追加された参考書数: {result.booksAdded}</p>}
+            {result.chaptersAdded !== undefined && <p className="mt-1">📋 追加された章数: {result.chaptersAdded}</p>}
+            {result.booksUpdated !== undefined && <p className="mt-1">🔄 更新された参考書数: {result.booksUpdated}</p>}
+            {result.chaptersUpdated !== undefined && <p className="mt-1">🔄 更新された章数: {result.chaptersUpdated}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 問題セットコンポーネント
+interface QuestionSetProps {
+  setIndex: number;
+  questions: any[];
+}
+
+const QuestionSet: React.FC<QuestionSetProps> = ({ setIndex, questions }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <div 
+        className={`flex items-center p-3 ${expanded ? 'bg-blue-50' : 'bg-gray-50'} cursor-pointer hover:bg-blue-50`}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center flex-1">
+          {expanded ? 
+            <ChevronDown className="w-4 h-4 text-blue-600 mr-2" /> : 
+            <ChevronRight className="w-4 h-4 text-gray-600 mr-2" />
+          }
+          <div>
+            <span className="font-medium">問題セット {setIndex}</span>
+            <span className="text-sm text-gray-500 ml-2">（問題 {(setIndex-1)*10 + 1}～{Math.min((setIndex-1)*10 + 10, (setIndex-1)*10 + questions.length)}）</span>
+          </div>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="bg-white p-4">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {questions.map((question, index) => (
+              <div key={question.questionId} className="border rounded-md p-3 hover:bg-gray-50">
+                <div className="font-medium flex justify-between">
+                  <span>{(setIndex-1)*10 + index + 1}. {question.questionText}</span>
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-800">
+                    難易度: {question.difficulty}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'A' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    A: {question.optionA}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'B' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    B: {question.optionB}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'C' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    C: {question.optionC}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'D' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    D: {question.optionD}
+                  </div>
+                </div>
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">正解:</span> {question.correctAnswer}
+                  {question.explanation && (
+                    <div className="mt-1">
+                      <span className="font-medium">解説:</span> {question.explanation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 参考書の詳細表示コンポーネント
+interface BookDetailsProps {
+  book: any;
+  onDelete: (bookId: string) => void;
+  loading: boolean;
+}
+
+const BookDetails: React.FC<BookDetailsProps> = ({ book, onDelete, loading }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+
+  // 参考書を展開したときに章データを取得
+  const fetchChapters = async () => {
+    if (chapters.length > 0) return; // 既に取得済みならスキップ
+    
+    setLoadingChapters(true);
+    try {
+      const response = await axios.get(`/api/chapters?textbookIds=${book.bookId}`);
+      
+      // 章をorder（順番）でソート
+      const sortedChapters = [...response.data].sort((a, b) => {
+        // orderプロパティがある場合はそれでソート
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        
+        // orderがない場合は章IDから数字を抽出してソート
+        const getChapterNumber = (id: string) => {
+          const match = id.match(/ch(\d+)/);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        
+        return getChapterNumber(a.chapterId) - getChapterNumber(b.chapterId);
+      });
+      
+      setChapters(sortedChapters);
+    } catch (err) {
+      console.error('章データ取得エラー:', err);
+    } finally {
+      setLoadingChapters(false);
+    }
+  };
+
+  // 章を選択したときに問題データを取得
+  const fetchQuestions = async (chapterId: string) => {
+    setLoadingQuestions(true);
+    try {
+      const response = await axios.get(`/api/questions?chapterIds=${chapterId}`);
+      setQuestions(response.data);
+    } catch (err) {
+      console.error('問題データ取得エラー:', err);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  // 参考書をクリックして展開/折りたたみ
+  const toggleExpand = () => {
+    const newExpandState = !expanded;
+    setExpanded(newExpandState);
+    
+    if (newExpandState) {
+      fetchChapters();
+    } else {
+      // 折りたたむ時は選択された章をリセット
+      setSelectedChapter(null);
+    }
+  };
+
+  // 章を選択
+  const selectChapter = (chapterId: string) => {
+    if (selectedChapter === chapterId) {
+      setSelectedChapter(null); // 同じ章をクリックしたら閉じる
+    } else {
+      setSelectedChapter(chapterId);
+      fetchQuestions(chapterId);
+    }
+  };
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      {/* 参考書ヘッダー */}
+      <div 
+        className={`flex items-center justify-between p-4 ${expanded ? 'bg-blue-50' : 'bg-white'} cursor-pointer hover:bg-blue-50`}
+        onClick={toggleExpand}
+      >
+        <div className="flex items-center space-x-3">
+          {expanded ? 
+            <ChevronDown className="w-4 h-4 text-blue-600" /> : 
+            <ChevronRight className="w-4 h-4 text-gray-600" />
+          }
+          <BookOpen className="w-5 h-5 text-blue-700" />
+          <div>
+            <div className="font-medium">{book.title}</div>
+            <div className="text-sm text-gray-600">
+              ID: {book.bookId} | 科目: {book.subject} | 章数: {book.chapterCount} | 問題数: {book.questionCount}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // クリックイベントの伝播を止める
+              onDelete(book.bookId);
+            }}
+            className="text-red-600 hover:text-red-800 font-medium text-sm px-3 py-1 rounded hover:bg-red-50"
+            disabled={loading}
+          >
+            削除
+          </button>
+        </div>
+      </div>
+      
+      {/* 展開時の詳細表示 */}
+      {expanded && (
+        <div className="px-6 pb-4 pt-2 bg-white">
+          {/* 章リスト */}
+          {loadingChapters ? (
+            <div className="text-center py-4">
+              <p className="text-gray-600">章データを読み込み中...</p>
+            </div>
+          ) : chapters.length > 0 ? (
+            <div className="mt-2 space-y-2">
+              <h4 className="font-medium text-gray-700 flex items-center">
+                <Book className="w-4 h-4 mr-1" /> 章一覧
+              </h4>
+              <div className="ml-4 space-y-2">
+                {chapters.map((chapter) => (
+                  <div key={chapter.chapterId}>
+                    <div 
+                      className={`flex items-center p-2 rounded cursor-pointer ${selectedChapter === chapter.chapterId ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                      onClick={() => selectChapter(chapter.chapterId)}
+                    >
+                      {selectedChapter === chapter.chapterId ? 
+                        <ChevronDown className="w-3 h-3 text-gray-600 mr-2" /> : 
+                        <ChevronRight className="w-3 h-3 text-gray-600 mr-2" />
+                      }
+                      <div className="text-blue-700 font-bold text-sm min-w-14 mr-1">
+                        {(() => {
+                          // 章IDから章番号を抽出
+                          const match = chapter.chapterId.match(/ch(\d+)/);
+                          const chNum = match ? match[1] : "";
+                          return `ch${chNum}`;
+                        })()}
+                      </div>
+                      <div>
+                        <span>{chapter.title}</span>
+                        <span className="text-xs text-gray-500 ml-2">（問題数: {chapter.questionCount || 0}）</span>
+                      </div>
+                    </div>
+                    
+                    {/* 章の詳細情報 */}
+                    {selectedChapter === chapter.chapterId && (
+                      <div className="ml-7 mt-2 border-l-2 border-gray-200 pl-4">
+                        {loadingQuestions ? (
+                          <div className="text-gray-600 p-2">章データを読み込み中...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* 参考書アイテム一覧 */}
+                            <div className="bg-gray-50 p-3 rounded-md">
+                              <h5 className="font-medium text-gray-700 flex items-center mb-2">
+                                <Book className="w-4 h-4 mr-1" /> 参考書アイテム一覧
+                              </h5>
+                              <div className="space-y-2">
+                                <div className="bg-white p-2 rounded border">
+                                  <div className="font-medium">章の概要</div>
+                                  <div className="text-sm mt-1">{chapter.description || chapter.title || '詳細情報がありません'}</div>
+                                </div>
+                                <div className="bg-white p-2 rounded border">
+                                  <div className="font-medium">学習ポイント</div>
+                                  <div className="text-sm mt-1">この章で学ぶ主要な文法項目や単語などの情報</div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* 問題セット一覧 */}
+                            {questions.length > 0 ? (
+                              <div>
+                                <h5 className="font-medium text-gray-700 flex items-center mb-2">
+                                  <FileTextIcon className="w-4 h-4 mr-1" /> 問題セット一覧（全{questions.length}問）
+                                </h5>
+                                
+                                {/* 問題をセットに分割して表示 */}
+                                {(() => {
+                                  // 問題をセットに分割（各セット10問まで）
+                                  const questionSets: any[] = [];
+                                  for (let i = 0; i < questions.length; i += 10) {
+                                    questionSets.push(questions.slice(i, i + 10));
+                                  }
+                                  
+                                  return (
+                                    <div className="space-y-2">
+                                      {questionSets.map((set, setIndex) => (
+                                        <QuestionSet 
+                                          key={setIndex} 
+                                          setIndex={setIndex + 1} 
+                                          questions={set} 
+                                        />
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ) : (
+                              <div className="text-gray-500 p-2">この章に登録されている問題はありません</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500 py-4">
+              章データが登録されていません
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 問題セットコンポーネント
+interface QuestionSetProps {
+  setIndex: number;
+  questions: any[];
+}
+
+const QuestionSet: React.FC<QuestionSetProps> = ({ setIndex, questions }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <div 
+        className={`flex items-center p-3 ${expanded ? 'bg-blue-50' : 'bg-gray-50'} cursor-pointer hover:bg-blue-50`}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center flex-1">
+          {expanded ? 
+            <ChevronDown className="w-4 h-4 text-blue-600 mr-2" /> : 
+            <ChevronRight className="w-4 h-4 text-gray-600 mr-2" />
+          }
+          <div>
+            <span className="font-medium">問題セット {setIndex}</span>
+            <span className="text-sm text-gray-500 ml-2">（問題 {(setIndex-1)*10 + 1}～{Math.min((setIndex-1)*10 + 10, (setIndex-1)*10 + questions.length)}）</span>
+          </div>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="bg-white p-4">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {questions.map((question, index) => (
+              <div key={question.questionId} className="border rounded-md p-3 hover:bg-gray-50">
+                <div className="font-medium flex justify-between">
+                  <span>{(setIndex-1)*10 + index + 1}. {question.questionText}</span>
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-800">
+                    難易度: {question.difficulty}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'A' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    A: {question.optionA}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'B' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    B: {question.optionB}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'C' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    C: {question.optionC}
+                  </div>
+                  <div className={`p-2 rounded text-sm ${question.correctAnswer === 'D' ? 'bg-green-100 border border-green-300' : 'bg-gray-50 border'}`}>
+                    D: {question.optionD}
+                  </div>
+                </div>
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">正解:</span> {question.correctAnswer}
+                  {question.explanation && (
+                    <div className="mt-1">
+                      <span className="font-medium">解説:</span> {question.explanation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminPage;
