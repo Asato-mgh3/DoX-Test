@@ -1,0 +1,241 @@
+1. 科目詳細ページのメインコンポーネント
+app/dashboard/[subject]/page.tsx
+tsx// 科目アイコンコンポーネント
+function SubjectIcon({ subject }: { subject: string }) {
+  const icons = {
+    英語: Book,
+    国語: Languages,
+    数学: Calculator,
+    理科: Microscope,
+    社会: Globe,
+  }
+
+  const Icon = icons[subject as keyof typeof icons] || Book
+  return <Icon className="h-6 w-6" />
+}
+
+export default function SubjectPage({ params }: { params: { subject: string } }) {
+  // URLパラメータをデコード
+  const subjectName = decodeURIComponent(params.subject)
+
+  // 科目データを取得
+  const subject = Object.values(subjectData).find((s) => s.name.toLowerCase() === subjectName.toLowerCase())
+
+  // 科目が見つからない場合は404
+  if (!subject) {
+    notFound()
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-black flex items-center gap-1 mb-4">
+          <ArrowLeft className="h-4 w-4" />
+          ダッシュボードに戻る
+        </Link>
+
+        <div className="flex items-center gap-4 mb-2">
+          <div
+            className="h-12 w-12 rounded-full flex items-center justify-center text-white"
+            style={{ backgroundColor: subject.color }}
+          >
+            <SubjectIcon subject={subject.name} />
+          </div>
+          <h1 className="text-2xl font-bold">{subject.name}</h1>
+        </div>
+        <p className="text-muted-foreground">{subject.description}</p>
+      </div>
+
+      {/* 以下、アクションボタン、教材と進捗、最近のテスト、おすすめのテストのセクション */}
+    </div>
+  )
+}
+2. 科目データの定義
+tsx// 科目データ
+const subjectData = {
+  英語: {
+    name: "英語",
+    icon: Book,
+    color: "#1D4A4A",
+    description: "英語の文法、語彙、読解、リスニングなどを学習します。",
+    recentTests: [
+      { id: 1, name: "英語文法クイズ", score: "85%", date: "2日前" },
+      { id: 2, name: "英単語テスト", score: "78%", date: "1週間前" },
+    ],
+    recommendedTests: [
+      { id: 1, name: "英語：高度な文法", difficulty: "上級" },
+      { id: 2, name: "英語リスニング", difficulty: "中級" },
+    ],
+    textbooks: [
+      { name: "大岩のいちばんはじめの英文法", progress: 75, totalChapters: 12, completedChapters: 9 },
+      { name: "英単語ターゲット1900", progress: 65, totalChapters: 20, completedChapters: 13 },
+    ],
+  },
+  // 他の科目のデータも同様に定義
+}
+3. アクションカードセクション
+tsx{/* アクションボタン */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-6 flex flex-col items-center text-center">
+      <div
+        className="h-16 w-16 rounded-full flex items-center justify-center text-white mb-4"
+        style={{ backgroundColor: subject.color }}
+      >
+        <Play className="h-8 w-8" />
+      </div>
+      <h2 className="text-lg font-bold mb-2">テストを受ける</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        {subject.name}の知識をテストして、理解度を確認しましょう。
+      </p>
+      <Button className="w-full" style={{ backgroundColor: subject.color, color: "white" }} asChild>
+        <Link href={`/dashboard/${params.subject}/take-test`}>テストを受ける</Link>
+      </Button>
+    </CardContent>
+  </Card>
+
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-6 flex flex-col items-center text-center">
+      <div
+        className="h-16 w-16 rounded-full flex items-center justify-center text-white mb-4"
+        style={{ backgroundColor: subject.color }}
+      >
+        <PenLine className="h-8 w-8" />
+      </div>
+      <h2 className="text-lg font-bold mb-2">テストを作成する</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        オリジナルの{subject.name}テストを作成して、学習を深めましょう。
+      </p>
+      <Button className="w-full" style={{ backgroundColor: subject.color, color: "white" }}>
+        テストを作成する
+      </Button>
+    </CardContent>
+  </Card>
+
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-6 flex flex-col items-center text-center">
+      <div
+        className="h-16 w-16 rounded-full flex items-center justify-center text-white mb-4"
+        style={{ backgroundColor: subject.color }}
+      >
+        <MessageSquareText className="h-8 w-8" />
+      </div>
+      <h2 className="text-lg font-bold mb-2">AI学習コーチに質問する</h2>
+      <p className="text-sm text-muted-foreground mb-4">{subject.name}に関する質問にAIコーチが答えます。</p>
+      <Button className="w-full" style={{ backgroundColor: subject.color, color: "white" }}>
+        AIコーチに質問する
+      </Button>
+    </CardContent>
+  </Card>
+</div>
+4. 教材と進捗セクション
+tsx{/* 教材と進捗 */}
+<div className="mb-8">
+  <h2 className="text-lg font-bold mb-4">教材と進捗</h2>
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-6">
+      <div className="space-y-6">
+        {subject.textbooks.map((textbook, index) => (
+          <div key={index} className="space-y-2">
+            <div className="flex justify-between text-sm font-medium">
+              <span>{textbook.name}</span>
+              <span className="text-muted-foreground">{textbook.progress}%</span>
+            </div>
+            <div className="relative">
+              <div className="h-6 w-full bg-slate-100 rounded-md overflow-hidden">
+                <div
+                  className="h-full rounded-md"
+                  style={{
+                    width: `${textbook.progress}%`,
+                    backgroundColor: subject.color,
+                  }}
+                >
+                  <div className="flex h-full">
+                    {Array.from({ length: textbook.totalChapters }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-full border-r border-white/30 last:border-r-0"
+                        style={{ width: `${100 / textbook.totalChapters}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs mt-1 text-right">
+                {textbook.completedChapters}/{textbook.totalChapters} 章完了
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+</div>
+5. 最近のテストセクション
+tsx{/* 最近のテスト */}
+<div className="mb-8">
+  <h2 className="text-lg font-bold mb-4">最近のテスト</h2>
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-0">
+      <div className="divide-y">
+        {subject.recentTests.map((test) => (
+          <div key={test.id} className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center text-white"
+                style={{ backgroundColor: subject.color }}
+              >
+                <Book className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-medium">{test.name}</h3>
+                <p className="text-sm text-muted-foreground">{test.date}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-medium">{test.score}</div>
+              <Button variant="ghost" size="sm" className="text-xs">
+                再受験
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+    <CardFooter className="border-t">
+      <Button variant="outline" className="w-full">
+        すべてのテスト履歴を表示
+      </Button>
+    </CardFooter>
+  </Card>
+</div>
+6. おすすめのテストセクション
+tsx{/* おすすめのテスト */}
+<div>
+  <h2 className="text-lg font-bold mb-4">おすすめのテスト</h2>
+  <Card className="rounded-2xl shadow-lg">
+    <CardContent className="p-0">
+      <div className="divide-y">
+        {subject.recommendedTests.map((test) => (
+          <div key={test.id} className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center text-white"
+                style={{ backgroundColor: subject.color }}
+              >
+                <Book className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-medium">{test.name}</h3>
+                <p className="text-sm text-muted-foreground">難易度: {test.difficulty}</p>
+              </div>
+            </div>
+            <Button size="sm" style={{ backgroundColor: subject.color, color: "white" }}>
+              テストを受ける
+            </Button>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+</div>

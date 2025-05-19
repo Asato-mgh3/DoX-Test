@@ -1,0 +1,837 @@
+Do-Test Application Detailed Design Specification
+1. Project Overview
+Project Name: Do-Test (Learning Support Application)
+Purpose: A comprehensive educational platform for creating tests from textbooks, taking exams, and supporting learning
+Target Users: Teachers/instructors and learners (Technical level: beginners)
+Development Environment: Replit
+Codebase: Next.js + TypeScript + shadcn/ui
+2. Existing Features
+2.1 Dashboard Features
+
+Home Dashboard
+
+Subject cards display (English, Japanese, Math, Science, Social Studies)
+Visual display of learning progress
+Color-coded subjects (English: #1D4A4A, Japanese: #781D33, Math: #142B50, Science: #57386B, Social Studies: #DE721A)
+
+
+Subject Dashboard
+
+Display of teaching materials and progress by subject
+Recent test results display
+Recommended tests display
+Buttons for taking tests, creating tests, and accessing AI coach
+
+
+
+2.2 Test-Taking Features
+
+Test Selection Screen
+
+Textbook selection
+Chapter selection
+Test start function
+
+
+Test Execution Screen
+
+Problem display (text, choices)
+Timer display
+Progress bar
+Immediate feedback display (correct/incorrect judgment, explanation)
+Problem flagging function
+
+
+Test Results Screen
+
+Score display (correct answer rate, points)
+Correct/incorrect display for each problem
+Explanation and reference information display
+Navigation to next test
+
+
+
+2.3 UI/UX Implementation Status
+
+Common Components
+
+Header/Navigation
+Cards, buttons, form elements
+Accordions, tabs, modals
+Progress bars, badges
+
+
+Responsive Design
+
+Mobile, tablet, desktop support
+Screen size detection with useIsMobile hook
+
+
+Theme
+
+Dark mode/light mode support
+Application of color themes by subject
+
+
+
+3. New Features to Implement
+3.1 Test Creation Feature (Priority Implementation)
+3.1.1 Test Creation Workflow
+
+Textbook Selection Screen
+
+Subject filter
+Textbook list display (multiple selection possible)
+Search function
+Visual display of selected textbooks
+
+
+Chapter Selection Screen
+
+Chapter list of selected textbooks
+Chapter detail information display (content summary, number of problems)
+Multiple chapter selection possible
+
+
+Problem Selection Screen
+
+Automatic selection mode
+
+Problem count specification (5-20 problems)
+Difficulty level specification (Level 1-5)
+Random selection/sequential selection toggle
+
+
+Manual selection mode
+
+Problem list display (problem text, choices, correct answer, difficulty)
+Search/filter functions (text search, difficulty)
+Selection by checkbox
+Counter for selected problems
+
+
+
+
+Test Header Setting Screen
+
+Test title input
+Test description input
+Header information settings
+
+Textbook name (auto-insert/editable)
+Chapter name (auto-insert/editable)
+Number of problems (auto-insert)
+Student name field
+Grade field
+Class field
+Date field (auto-insert/editable)
+Score field
+
+
+Option settings
+
+Problem order shuffle on/off
+Choice order shuffle on/off
+Answer field display/hide
+
+
+
+
+Preview/Download Screen
+
+Test preview display (actual problem display)
+Document format download button
+PDF format download button
+Test save function (save to my tests list)
+Test ID generation (for sharing with other users)
+
+
+
+3.1.2 UI/UX Detailed Requirements
+
+Test Creation Form
+
+Step display (highlight current step)
+Previous/Next navigation
+Input validation and error messages
+Auto-save function (draft saving)
+
+
+Problem Selection Interface
+
+Pagination (for handling large numbers of problems)
+Drag & drop function (problem reordering)
+Preview function (problem detail display)
+Selected problem badge display (visualization of selected problems)
+
+
+Preview Function
+
+Print preview display
+PDF preview display
+Layout adjustment options
+Page navigation function
+
+
+
+3.1.3 Document Generation Technical Requirements
+
+Document Format
+
+Microsoft Word compatible format (.docx)
+Editable format
+Support for tables, images, equations
+Template-based generation
+
+
+PDF Format
+
+High-quality PDF generation
+Header/footer settings
+Automatic page number insertion
+Font size/font settings
+Print optimization
+
+
+
+3.2 AI Learning Coach Feature
+3.2.1 AI Coach Basic Functions
+
+Textbook-Specific AI Coach
+
+Answer generation specialized for specific textbooks
+Integration with textbook database
+Question analysis and appropriate answer generation
+Explanation generation (alternate expressions, explanations using diagrams)
+
+
+Conversation Interface
+
+Chat UI (message history display)
+User input field (question input)
+Attachment function (questions with image attachments)
+Voice input support
+
+
+Answer Generation Features
+
+Stepwise explanation (answers matching comprehension level)
+Reference page information display
+Diagram/equation generation
+Automatic generation of similar problems
+
+
+
+3.2.2 AI Technology Implementation Details
+
+AI Model
+
+Use of Gemini 2.5 Flash Preview 04-17 via Vertex AI
+Context management (understanding conversation context)
+Prompt engineering (optimal instruction generation)
+
+
+Data Integration
+
+Pre-learning of textbook data
+Index creation and efficient search
+Metadata utilization (chapter structure, problem difficulty)
+
+
+Conversation History Management
+
+Storage period settings by plan
+
+Free plan: No storage
+Standard plan and above: 30-day storage
+
+
+Conversation history by user
+History search/filtering function
+
+
+
+3.2.3 AI Coach UI/UX
+
+Coach Selection Screen
+
+AI coach display for each textbook
+Coach feature explanation
+Subscription plan display (available/limited)
+
+
+Chat Interface
+
+Message display area
+Input form
+Send button
+File attachment function
+Voice input function
+
+
+Answer Display
+
+Text display
+Diagram display
+Equation display (MathJax/KaTeX)
+Reference information display
+
+
+
+3.3 Authentication/User Management Feature
+3.3.1 Authentication System
+
+Login Methods
+
+Social login (Google, Apple, LINE)
+Email + password authentication
+Two-factor authentication (optional)
+
+
+Permission Management
+
+Administrator permission (for creator: Akinori Sato only)
+General user permission
+Feature restrictions based on permissions
+
+
+Session Management
+
+Token management
+Session timeout
+Secure cookie settings
+
+
+
+3.3.2 User Profile
+
+Basic Information
+
+User ID
+Name
+Email address
+Password (hashed)
+
+
+Additional Information
+
+Nickname
+Profile image
+Affiliation (school/organization)
+Role (teacher/student)
+
+
+Settings
+
+Language settings
+Notification settings
+Privacy settings
+
+
+
+3.3.3 Profile/Settings Management UI
+
+Profile Screen
+
+User information display
+Edit function
+Profile image upload
+
+
+Settings Screen
+
+Account settings
+Notification settings
+Privacy settings
+Password change
+
+
+
+3.4 Subscription Feature
+3.4.1 Plan Structure
+
+Free Plan
+
+Only two English textbooks available
+Only two corresponding AI learning coaches available
+Test result storage period: 60 days
+
+
+Standard Plan
+
+300 yen/month per subject
+All features for subscribed subjects available
+Option: +¥1,980 for unlimited AI learning coach
+
+
+Premium Plan
+
+2,980 yen/month
+All subjects and all features available
+Option: +¥1,980 for unlimited AI learning coach
+
+
+DoX Premium Plan
+
+Details TBD (top-tier plan)
+Test result storage period: 3 years
+
+
+
+3.4.2 Payment System
+
+Payment Methods
+
+Credit card
+Convenience store payment
+In-app purchase
+
+
+Payment Processing
+
+Monthly subscription management
+Payment history
+Receipt issuance
+
+
+Upgrade/Downgrade Processing
+
+Plan change flow
+Pro-rated calculation
+Automatic renewal setting
+
+
+
+3.4.3 Subscription Management UI
+
+Plan Display Screen
+
+Current plan display
+Plan comparison table
+Pricing information
+
+
+Upgrade Screen
+
+Plan selection
+Payment method selection
+Confirmation screen
+
+
+Subscription Management Screen
+
+Contract information display
+Next renewal date display
+Cancellation function
+
+
+
+3.5 Data Management Feature
+3.5.1 CSV Import Function (Administrator Only)
+
+Import Screen
+
+File upload
+Encoding settings
+Field mapping
+Validation and confirmation
+
+
+Data Processing
+
+CSV parsing
+Error checking
+Special character processing (newline processing for \n, etc.)
+Integration with existing data
+
+
+Import History
+
+Import date/time
+File information
+Import results
+Error logs
+
+
+
+3.5.2 Data Structure
+
+Textbook Structure Data
+
+book_id: String
+book_title: String
+subject: String
+chapter_id: String
+chapter_title: String
+chapter_order: Integer
+item_id: String
+item_title: String
+item_order: Integer
+key_points: String
+full_text: String
+page_reference: String
+
+
+Question Set Data
+
+question_id: String
+book_id: String
+chapter_id: String
+set_id: String
+question_text: String
+option_a: String
+option_b: String
+option_c: String
+option_d: String
+correct_answer: String
+explanation: String
+difficulty: Integer
+question_type: String
+
+
+
+3.5.3 Data Model Extension
+
+Test Definition
+
+test_id: String
+creator_id: String
+title: String
+description: String
+subject: String
+book_ids: String[]
+chapter_ids: String[]
+question_ids: String[]
+settings: Object
+created_at: DateTime
+updated_at: DateTime
+
+
+Test Results
+
+result_id: String
+user_id: String
+test_id: String
+score: Number
+answers: Object
+duration: Number
+completed_at: DateTime
+expires_at: DateTime
+
+
+
+4. Technical Implementation Details
+4.1 Frontend Implementation
+4.1.1 Next.js + TypeScript Configuration
+
+Directory Structure
+
+app/: Application root
+
+dashboard/: Dashboard-related pages
+auth/: Authentication-related pages
+create-test/: Test creation-related pages
+take-test/: Test-taking related pages
+ai-coach/: AI coach-related pages
+settings/: User settings pages
+
+
+components/: Common components
+
+ui/: UI components
+test-creator/: Test creation components
+ai-coach/: AI coach components
+
+
+lib/: Utilities, helper functions
+hooks/: Custom hooks
+styles/: Global styles
+
+
+Routing
+
+app/page.tsx: Homepage
+app/dashboard/page.tsx: Dashboard
+app/dashboard/[subject]/page.tsx: Subject-specific page
+app/dashboard/[subject]/take-test/page.tsx: Test selection
+app/dashboard/[subject]/take-test/[...params]/page.tsx: Test taking
+app/dashboard/create-test/page.tsx: Test creation
+app/dashboard/ai-coach/page.tsx: AI coach selection
+app/dashboard/ai-coach/[bookId]/page.tsx: AI coach chat
+
+
+
+4.1.2 UI Components
+
+Existing shadcn/ui Components
+
+Button, Card, Dialog, Form, Input, Slider, Tabs, etc.
+
+
+Custom Components
+
+TestCreatorForm
+QuestionSelector
+TestPreview
+DocumentPreview
+AICoachChat
+SubscriptionSelector
+
+
+Forms and Validation
+
+Utilization of react-hook-form
+Schema validation with zod
+Form state management
+
+
+
+4.1.3 Responsive Design
+
+Breakpoints
+
+Mobile: < 768px
+Tablet: 768px - 1024px
+Desktop: > 1024px
+
+
+Responsive Components
+
+Liquid layout
+Utilization of flexbox/grid
+Media queries
+
+
+Mobile-First Support
+
+Touch operation optimization
+Font/button size adjustment
+Content prioritization
+
+
+
+4.2 Backend Implementation
+4.2.1 Next.js API Routes
+
+Authentication API
+
+/api/auth/[...nextauth].ts: Authentication processing
+/api/auth/signup: User registration
+/api/auth/login: Login processing
+
+
+Test-Related API
+
+/api/tests: Test list/creation
+/api/tests/[id]: Test details/update/deletion
+/api/tests/generate-pdf: PDF generation
+
+
+AI Coach API
+
+/api/ai-coach/chat: Chat processing
+/api/ai-coach/history: History retrieval
+
+
+Subscription API
+
+/api/subscription/plans: Plan list
+/api/subscription/checkout: Payment processing
+/api/subscription/manage: Subscription management
+
+
+
+4.2.2 Database Integration
+
+Database Design
+
+User table
+Test table
+Result table
+Subscription table
+
+
+Data Access Layer
+
+Use of ORM/query builder
+Implementation of CRUD operations
+Index optimization
+
+
+Data Caching
+
+Performance improvement measures
+Data update strategy
+
+
+
+4.2.3 External API Integration
+
+Vertex AI Integration
+
+API authentication
+Prompt generation
+Response processing
+
+
+Payment System Integration
+
+Stripe/PayPal integration
+Billing processing
+webhook processing
+
+
+
+4.3 PDF/Document Generation
+4.3.1 PDF Generation Technology
+
+PDF Libraries
+
+React-PDF
+jsPDF
+PDF.js
+
+
+Layout Definition
+
+Template design
+Dynamic content placement
+Pagination
+
+
+Styling
+
+Font settings
+Color settings
+Margin/padding settings
+
+
+
+4.3.2 Document Generation Technology
+
+Document Libraries
+
+docx.js
+officegen
+mammoth.js
+
+
+Template Function
+
+Header/footer settings
+Style definition
+Section management
+
+
+
+4.4 Performance Optimization
+
+Frontend Optimization
+
+Code splitting
+Lazy loading
+Memoization
+
+
+Backend Optimization
+
+Caching
+Query optimization
+Batch processing
+
+
+Resource Optimization
+
+Image compression
+CDN utilization
+Lazy loading of resources
+
+
+
+5. Subject List
+
+English
+Modern Japanese
+Classical Japanese
+Chinese Classics
+Essay Writing
+Japanese History
+World History
+Geography
+Politics & Economics
+Ethics & Public
+Information
+Mathematics
+Chemistry
+Physics
+Biology
+Earth Science
+
+6. Implementation Priorities
+
+Basic Test Creation Features
+
+Textbook/chapter selection
+Problem selection
+Test settings
+
+
+Document/PDF Generation Features
+
+Test preview
+Document format download
+PDF format download
+
+
+Basic AI Learning Coach Features
+
+Chat interface
+Vertex AI integration
+Textbook data integration
+
+
+Authentication/User Management
+
+Login function
+Profile management
+Permission management
+
+
+Subscription Management
+
+Plan definition
+Payment integration
+Feature restriction implementation
+
+
+Feedback/Help System
+
+Feedback collection
+Bug reporting
+Help/tutorial
+
+
+
+7. Technical Notes
+
+Use the latest version of Next.js (app router compatible)
+Apply TypeScript strict mode
+Thorough responsive design
+Consideration for accessibility
+Adherence to security best practices
+Performance optimization (supporting 300 simultaneous accesses)
+Thorough error handling
+Design with extensibility in mind
+
+8. Implementation and Development Flow
+
+Understanding existing code and creating a base
+Implementation of basic components
+Creation of static UI (mockup)
+Implementation of API endpoints
+Frontend and backend integration
+Test implementation
+Refactoring and optimization
+Deployment and operation verification
+
+// 出力は日本語で行ってください。

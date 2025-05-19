@@ -1,0 +1,184 @@
+1. スタイルとテーマの定義
+app/globals.css または styles/globals.css
+css@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    /* その他のデフォルトカラー変数 */
+    
+    /* 科目ごとの色も定義されている可能性あり */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    /* その他のチャート色 */
+  }
+  
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    /* ダークモード用の色定義 */
+  }
+}
+2. 科目カラーの定義
+app/dashboard/page.tsx
+typescript// 科目ごとの色を定義
+const subjectColors = {
+  英語: "#1D4A4A",
+  国語: "#781D33",
+  数学: "#142B50",
+  理科: "#57386B",
+  社会: "#DE721A",
+}
+3. ダッシュボードレイアウト
+app/dashboard/layout.tsx
+tsxexport default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* ヘッダー */}
+      <header className="border-b bg-white">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          {/* ロゴと各種リンク */}
+        </div>
+      </header>
+
+      {/* メインコンテンツ */}
+      <main className="flex-1 bg-gray-50">{children}</main>
+    </div>
+  )
+}
+4. ダッシュボード本体
+app/dashboard/page.tsx
+tsxexport default function DashboardPage() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="flex justify-between items-start mb-8">
+        {/* ユーザー情報とボタン */}
+      </div>
+
+      <h2 className="text-xl font-bold mb-4">テスト受験/テスト作成/AI学習コーチ</h2>
+
+      {/* 科目カード */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {/* 英語、国語、数学、理科、社会のカード */}
+      </div>
+
+      <h2 className="text-xl font-bold mb-4">学習進捗</h2>
+
+      {/* 学習進捗 */}
+      <div className="bg-white rounded-lg border p-6 mb-8">
+        {/* 各科目の進捗バー */}
+      </div>
+
+      {/* 最近のテスト */}
+      <div className="mb-8">
+        {/* テスト履歴 */}
+      </div>
+
+      {/* おすすめのテスト */}
+      <div>
+        {/* おすすめテスト一覧 */}
+      </div>
+    </div>
+  )
+}
+5. 科目ごとのカード設計
+tsx<Link href="/dashboard/英語">
+  <Card className="h-[120px] flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-shadow bg-[#1D4A4A] text-white rounded-xl">
+    <div className="text-3xl mb-2">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+      </svg>
+    </div>
+    <div className="font-medium">英語</div>
+  </Card>
+</Link>
+6. 進捗バーのデザイン
+tsx<div className="space-y-6">
+  {/* 英語 */}
+  <div>
+    <div className="flex items-center gap-2 mb-1">
+      <div className="w-3 h-3 rounded-full bg-[#1D4A4A]"></div>
+      <span className="font-medium">英語</span>
+      <span className="ml-auto">75%</span>
+    </div>
+    <div className="text-sm text-muted-foreground mb-2">大岩のいちばんはじめの英文法</div>
+    <div className="relative h-6 w-full bg-gray-100 rounded-full">
+      <div className="absolute top-0 left-0 h-full bg-[#1D4A4A] rounded-full" style={{ width: "75%" }}></div>
+      <div className="absolute top-0 left-0 h-full w-full flex">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="h-full flex-1 border-r border-gray-200 last:border-r-0"></div>
+        ))}
+      </div>
+    </div>
+    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+      <span>0%</span>
+      <span>9/12 章完了</span>
+      <span>100%</span>
+    </div>
+  </div>
+  
+  {/* 他の科目 */}
+</div>
+7. フォント設定
+app/layout.tsx
+tsximport { Inter } from "next/font/google"
+
+const inter = Inter({ subsets: ["latin"] })
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="ja">
+      <body className={inter.className}>{children}</body>
+    </html>
+  )
+}
+8. tailwind.config.ts での追加設定
+typescriptimport type { Config } from "tailwindcss";
+
+const config: Config = {
+    darkMode: ["class"],
+    content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "*.{js,ts,jsx,tsx,mdx}"
+  ],
+  theme: {
+  	extend: {
+  		colors: {
+  		    // カラー設定
+  		    // HSLカラー値で定義
+  		},
+  		borderRadius: {
+  			lg: 'var(--radius)',
+  			md: 'calc(var(--radius) - 2px)',
+  			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		// アニメーション設定
+  	}
+  },
+  plugins: [require("tailwindcss-animate")],
+};
